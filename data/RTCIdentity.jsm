@@ -16,20 +16,8 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 // XXX protocol handler example
 // https://mxr.mozilla.org/mozilla-central/source/toolkit/components/thumbnails/PageThumbsProtocol.js
 
-XPCOMUtils.defineLazyModuleGetter(this, "Logger",
-                                  "resource://gre/modules/identity/LogUtils.jsm");
-
 XPCOMUtils.defineLazyModuleGetter(this, "Sandbox",
                                   "resource://gre/modules/identity/Sandbox.jsm");
-
-function log(...aMessageArgs) {
-  Logger.reportError.apply(Logger, ["RTC"].concat(aMessageArgs));
-}
-
-function reportError(...aMessageArgs) {
-  Logger.reportError.apply(Logger, ["RTC"].concat(aMessageArgs));
-}
-
 /*
  * IDPChannel: A message channel between the RTC PeerConnection and a
  * designated IdP Proxy.
@@ -48,8 +36,12 @@ function reportError(...aMessageArgs) {
  *                          identity:  user identity (e.g., alice@example.com)
  */
 function IDPChannel(aMessageCallback, aOptions) {
+  let doNothing = function() {};
+  this.debug = false;
   aOptions = aOptions || {};
-  log(aOptions);
+  this.log = this.debug ? aOptions.logger || doNothing : doNothing;
+  this.logError = this.debug ? function() { this.log("Error: " + arguments[0]); } : doNothing;
+  this.log(aOptions);
 
   this.receiveResponse = aMessageCallback;
 
@@ -57,13 +49,12 @@ function IDPChannel(aMessageCallback, aOptions) {
   this.protocol = aOptions.protocol || "default";
   this.well_known = this.provider + '/.well-known/idp-proxy/' + this.protocol;
   this.contentWindow = null;
-
   try {
     Services.io.newURI(this.well_known, null, null).spec;
     this.init();
   }
   catch(e) {
-    reportError("Bad URL");
+    this.logError("Bad URL");
   }
   // XXX Try to get an assertion immediately
 }
@@ -87,12 +78,11 @@ IDPChannel.prototype = {
 
         // ensure message came from itself and not another window
         if(e.source == this.contentWindow) {
-          log("got msg: " + e.data);
+          this.log("got msg: " + e.data);
           this.receiveResponse(e.data);
-          log("test: " + e.data);
         }
         else {
-          reportError("Message from incorrect origin: " + e.data);
+          this.logError("Message from incorrect origin: " + e.data);
         }
       }.bind(this), false, true);
 
@@ -101,19 +91,19 @@ IDPChannel.prototype = {
 
   send: function idpChannel_send(message) {
     if (!this.contentWindow) {
-      return reportError("HostFrame or MessageChannel not open");
+      return this.logError("HostFrame or MessageChannel not open");
     }
 
     try {
       // dispatch CustomEvent to the sandboxed window with our message as evt.detail
       // evt.isTrusted will be true, which should be checked in content to ensure
       // that the messages are originating from the user agent and not other content
-      log('Sending message to sandbox: ' + message);
+      this.log('Sending message to sandbox: ' + message);
       let evt = new this.contentWindow.CustomEvent('rtcmessage', { detail : message });
       this.contentWindow.dispatchEvent(evt);
     } catch (err) {
-      log('Failed to send message: ' + message);
-      reportError(err);
+      this.log('Failed to send message: ' + message);
+      this.logError(err);
     }
   }
 };

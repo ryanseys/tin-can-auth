@@ -1,9 +1,14 @@
 {
-  "name": "addonlol",
-  "fullName": "addonlol",
-  "id": "jid1-AQVT00bngQvnug",
-  "description": "a basic add-on",
-  "author": "",
+  "name": "tin-can-auth",
+  "fullName": "Tin Can Auth",
+  "id": "rtcweb@ryanseys.com",
+  "description": "Protect your privacy by authenticating your Tin Can calls, ensuring you are talking directly to your friends.",
+  "author": "Ryan Seys",
+  "homepage": "https://ryanseys.com",
   "license": "MPL 2.0",
-  "version": "0.1"
+  "version": "0.1",
+  "icon" :"icon.png",
+  "permissions": {
+    "private-browsing": true
+  }
 }
