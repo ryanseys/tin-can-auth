@@ -84,7 +84,7 @@ IDPChannel.prototype = {
         else {
           this.logError("Message from incorrect origin: " + e.data);
         }
-      }.bind(this), false, true);
+      }.bind(this), false);
 
     }.bind(this));
   },
